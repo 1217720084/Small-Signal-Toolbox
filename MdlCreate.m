@@ -19,7 +19,15 @@ for n = 1:length(varargin)
         flow = varargin{n+1};
     elseif(strcmpi(varargin{n},'type'))
         type = varargin{n+1};
+    elseif(strcmpi(varargin{n},'freq'))
+        w0 = 2*pi*varargin{n+1};
     end
+end
+
+try 
+    w0;
+catch
+    w0 = 2*pi*60; %default base frequency
 end
 
 try 
@@ -33,10 +41,10 @@ if floor(type/10) == 0
         para;
     catch
         % default parameter in perunit
-        para.J = 3.5*2/(2*pi*50)^2;
-        para.D = 1/(2*pi*50)^2;
-        para.L = 0.05/(2*pi*50);
-        para.R = 0.01;
+        para.J = (3.5)*2/w0^2;  % Jpu=J/Pb=[1/2*J*w0^2/Pb]*2/w0^2, [MWs/MW] 
+        para.D = (1)/w0^2;   % Dpu=dTpu/dw=dPpu/dw/w0=[dP%/dw%]/w0^2, [%/%]
+        para.L = (0.05)/w0;
+        para.R = (0.01);
     end
 elseif floor(type/10) == 1
     try 
@@ -51,7 +59,7 @@ elseif floor(type/10) == 1
         para.ki_pll = para.kp_pll * (2*2*pi)/4; 
         para.tau_pll = 1/(2*pi*200);
         para.k_pf = 0;
-        para.L = 0.05/(2*pi*50);
+        para.L = 0.05/(w0);
         para.R = 0.01;
         para.kp_i_dq = para.L * (500*2*pi);
         para.ki_i_dq = para.kp_i_dq *(500*2*pi)/4;
@@ -61,7 +69,7 @@ end
 try 
     flow;
 catch
-    flow = [-1,0,1,0,2*pi*50];  %[P Q V xi omega]
+    flow = [-1,0,1,0,w0];  %[P Q V xi omega]
 end
 
 s = sym('s');

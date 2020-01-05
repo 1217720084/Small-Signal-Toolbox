@@ -1,4 +1,5 @@
 % created 2019.11.12 by Yunjie Gu
+% based on YbusCalc.m
 % transfer function Ybus
 % input: branch from-to format
 % branches with the same from-to are in paralell
@@ -19,7 +20,6 @@ nbus = max(max(fb),max(tb));        % no. of buses...
 nbranch = length(fb);               % no. of branches...
 Ybus = zeros(2*nbus,2*nbus)*s;      % Initialise YBus...
 y = zeros(2,2,nbranch)*s;           % Initialise y branch...    
-%z = zeros(2,2,nbranch)*s;           % Initialise z branch...    
 
 for n = 1:nbranch
 
@@ -42,13 +42,11 @@ for n = 1:nbranch
             ys = ps^(-1)*[ds qs;-qs ds];
             ys = minreal(ys);
             y(:,:,n) = ys;
-            %z(:,:,n) = y(:,:,n)^-1;
         end
     else
         yt = pt^(-1)*[dt qt;-qt dt];
         yt = minreal(yt);
         y(:,:,n) = yt;
-        %z(:,:,n) = y(:,:,n)^-1;
     end
     
 end
@@ -61,7 +59,6 @@ for k=1:nbranch
         Ybus((2*tb(k)-1):(2*tb(k)),(2*tb(k)-1):(2*tb(k))) = Ybus((2*tb(k)-1):(2*tb(k)),(2*tb(k)-1):(2*tb(k)))+y(:,:,k);
     else              %diagonal
         Ybus((2*fb(k)-1):(2*fb(k)),(2*tb(k)-1):(2*tb(k))) = Ybus((2*fb(k)-1):(2*fb(k)),(2*tb(k)-1):(2*tb(k)))+y(:,:,k);
-        %Zbus((2*fb(k)-1):(2*fb(k)),(2*tb(k)-1):(2*tb(k))) = Zbus((2*fb(k)-1):(2*fb(k)),(2*tb(k)-1):(2*tb(k)))+z(:,:,k);   
     end 
 end
 

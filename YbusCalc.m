@@ -4,7 +4,7 @@
 % branch :  --RRR--LLL--       ----
 %                       --GGG--
 %
-% netlist:   |  From |  To   |   R   |   L   |   C   |   G   |
+% netlist:   |  From |  To   |   R   |  wL   |  wC   |   G   |
 %            |  Bus  |  Bus  |       |       |       |       |
 % linedata = [  1       2        0       X       0      inf;
 %               1       1        0       0       0       G;
