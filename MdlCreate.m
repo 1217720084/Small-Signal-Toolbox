@@ -162,9 +162,10 @@ elseif floor(type/10) == 1  %10-19
     omega_pll_i = sym('omega_pll_i');
 
     % ### input and output
-    v_d = sym('v_d');
-    v_q = sym('v_q');
+    v_d  = sym('v_d');
+    v_q  = sym('v_q');
     P_dc = sym('P_dc');
+    ang_r= sym('ang_r');
     % i_d = sym('i_d');
     % i_q = sym('i_q');
     % omega = sym('omega');
@@ -189,6 +190,7 @@ elseif floor(type/10) == 1  %10-19
     i_q_r = sym('i_q_r');    %constant q control, PQ/PV node in power flow
     e_d = (i_d - i_d_r)*kp_i_dq + i_d_i;
     e_q = (i_q - i_q_r)*kp_i_dq + i_q_i;
+    e_ang = atan2(v_q,v_d) - ang_r;
       
     % ### output equations
     % empty
@@ -200,14 +202,15 @@ elseif floor(type/10) == 1  %10-19
     di_q_i = (i_q - i_q_r)*ki_i_dq;
     di_d = (v_d - R*i_d + omega * L*i_q - e_d)/L;
     di_q = (v_q - R*i_q - omega * L*i_d - e_q)/L;
-    domega_pll_i = atan2(v_q,v_d) * ki_pll; 
-    domega = (omega_pll_i + atan2(v_q,v_d)*kp_pll - omega)/tau_pll;
+    domega_pll_i = e_ang * ki_pll; 
+    domega = (omega_pll_i + e_ang * kp_pll - omega)/tau_pll;
 
     % ### Jacobian
     x = [i_d i_q i_d_i i_q_i v_dc v_dc_i omega_pll_i omega].';
     f = [di_d di_q di_d_i di_q_i dv_dc dv_dc_i domega_pll_i domega].';
     
-    u = [P_dc v_d v_q].';
+    %u = [P_dc v_d v_q].';   
+    u = [ang_r v_d v_q].';
     y = [omega i_d i_q].';
 
     As = jacobian(f,x);
@@ -252,7 +255,8 @@ elseif floor(type/10) == 1  %10-19
     omega_pll_i = omega;
     v_dc_i = i_d;
     v_dc = V_dc;
-    P_dc = e_d*i_d + e_q*i_q; 
+    P_dc = e_d*i_d + e_q*i_q;
+    ang_r= 0;
       
 end
 
@@ -269,7 +273,7 @@ Sn = ss(An,Bn,Cn,Dn);
 % embed frame dynamics
 Kv = [-v_q ; v_d];
 Ki = [-i_q ; i_d];
-% integral omega and unit gain for all
+% integration for omega and unit gain for all
 Se = ss(0,[1 0 0],[1;0;0;0],[zeros(1,3);eye(3)]);
 Se = series(Sn,Se);
 Se = feedback(Se,ss([],[],[],Kv),[2,3],1);

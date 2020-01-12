@@ -2,6 +2,7 @@ function plotc(Xw,wbd,varargin)
 
     LineWidth = LoadVar(1,'LineWidth',varargin);
     LineStyle = LoadVar('-','LineStyle',varargin);
+    Color = LoadVar([],'Color',varargin);
     PhaseOn = LoadVar(1,'PhaseOn',varargin);
 
     [M,N,W] = size(Xw);
@@ -53,11 +54,6 @@ function plotc(Xw,wbd,varargin)
                     subplot(1,2,2);
                     p(2)= loglog(wbdp,abs(squeeze(Xwp(m,n,:))));
                     grid on;  hold on;
-
-                    for h = 1:length(p)
-                        p(h).LineWidth = LineWidth;
-                        p(h).LineStyle = LineStyle;
-                    end
                 end
             end
         else
@@ -81,11 +77,6 @@ function plotc(Xw,wbd,varargin)
                     subplot(2,2,4);
                     p(4)= semilogx(wbdp,squeeze(Arg_wp(m,n,:))*180/pi);
                     grid on;  hold on;
-  
-                    for h = 1:length(p)
-                        p(h).LineWidth = LineWidth;
-                        p(h).LineStyle = LineStyle;
-                    end
                 end
             end    
         end
@@ -114,11 +105,6 @@ function plotc(Xw,wbd,varargin)
                     end
                     p = loglog(wbd,abs(squeeze(Xw(m,n,:))));
                     grid on;  hold on; 
- 
-                    for h = 1:length(p)
-                        p(h).LineWidth = LineWidth;
-                        p(h).LineStyle = LineStyle;
-                    end
                 end
             end 
         else
@@ -134,14 +120,21 @@ function plotc(Xw,wbd,varargin)
                     subplot(2,1,2);
                     p(2)= semilogx(wbd,squeeze(Arg_w(m,n,:))*180/pi);
                     grid on;  hold on;  
-                    
-                    for h = 1:length(p)
-                        p(h).LineWidth = LineWidth;
-                        p(h).LineStyle = LineStyle;
-                    end
                 end
             end    
         end
+    end
+    
+    try 
+        p; %#ok<VUNUS>
+        for h = 1:length(p)
+            p(h).LineWidth = LineWidth;
+            p(h).LineStyle = LineStyle;
+            if ~isempty(Color)
+                p(h).Color = Color;
+            end
+        end
+    catch
     end
 
 end

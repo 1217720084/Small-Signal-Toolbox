@@ -1,12 +1,13 @@
-clear all;
-clc;
+clear; clc;
 close all;
+cmap = get(groot,'defaultAxesColorOrder');
+cpoint = 1;
 
 %# common variables
 w0 = 2*pi*60;
 s = sym('s');
 I = eye(2);
-w = logspace(-2,5,500)*2*pi;
+w = logspace(-2,3,1e5)*2*pi;
 %w = [-flip(w),w];
 
 %%
@@ -30,140 +31,172 @@ para2.kp_i_dq = para2.L * (500*2*pi);
 para2.ki_i_dq = para2.kp_i_dq *(500*2*pi)/4;
 
 %%
-%# Test A: low inertia interact with pll
-if 1
+%# Test: low inertia interact with pll
     
-    layout = 3;
-    
-    if layout == 1      
-        %2 buses : test the match between symbolic and tf models     
-        %-----------------------------------------------------------
-        %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
-        Bus     = [ 1     1     1.0     0     1.0    0    0.0    0     -1     1;
-                    2     3     1.0     0     1.0  -0.2   0.0    0     -1     1];
-        %-----------------------------------------------------------
-        %         |  From |  To   |   R   |   L   |   C   |   G   |
-        %         |  Bus  |  Bus  |       |       |       |       |
-        Line    = [  1       2      0.00     0.3    0.00      inf;
-                     1       1        0       0     1e-1      2.0;
-                     2       2        0       0     1e-1      0.0];     
-    elseif layout == 2      
-        %3 buses : test generator interaction        
-        %-----------------------------------------------------------
-        %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
-        Bus     = [ 1     1     1.0     0     0.5    0    0.0    0     -1     1;
-                    2     2     1.0     0     0.5    0    0.0    0     -1     1;
-                    3     2     1.0     0     1.0    0    0.0    0     -1     1];            
-        %-----------------------------------------------------------
-        %         |  From |  To   |   R   |   L   |   C   |   G   |
-        %         |  Bus  |  Bus  |       |       |       |       |
-        Line    = [  1       2      0.01     0.3      0      inf;
-                     2       3      0.01     0.3      0      inf;
-                     3       1      0.01     0.3      0      inf;
-                     1       1        0       0     2e-2     1.0;
-                     2       2        0       0     2e-2     1.0;
-                     3       3        0       0     2e-2     0.0]; 
-    elseif layout == 3      
-        %4 buses : test generator converter interaction  
-        %-----------------------------------------------------------
-        %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
-        Bus     = [ 1     2     1.0     0     0.5    0    0.0    0     -1     1;
-                    2     2     1.0     0     0.5    0    0.0    0     -1     1;
-                    3     1     1.0     0     0.5    0    0.0    0     -1     1;
-                    4     3     1.0     0     0.5  -0.2   0.0    0     -1     1];
-        %-----------------------------------------------------------
-        %         |  From |  To   |   R   |  wL   |  wC   |   G   |
-        %         |  Bus  |  Bus  |       |       |       |       |
-        Line    = [  1       2      0.01     0.3      0      inf;
-                     2       3      0.01     0.3      0      inf;
-                     3       1      0.01     0.3      0      inf;
-                     3       4      0.01     0.3      0      inf;
-                     1       1        0       0     1e-5     0.6;
-                     2       2        0       0     1e-5     0.6;
-                     3       3        0       0     1e-5     0.8;
-                     4       4        0       0     1e-5      0];           
-    end
+layout = 3;
+sweep = 1;
 
-    [~,~,Ang0,P0,Q0,V0]=PowerFlow(Bus,Line);
-    
-    nbus = max(Bus(:,1));
-    
-    [Ytf1,Yb1] = YbusCalcTF(Line(1:(end-nbus),:),w0);
-    [Ytf2,Yb2] = YbusCalcTF(Line((end-nbus+1):end,:),w0);
-    Yb1 = minreal(Yb1);
-    Zb2 = inv(Yb2);
-    Zb2 = minreal(Zb2);
-    Zb = feedback(Zb2,Yb1);
-            
-    %for gain = logspace(log10(5),log10(20),10)
-    for bandwidth = linspace(5,20,10)
-        
-        % reduce generator inertia
-        para1_ = para1;
-        para1_.J = para1_.J/10;
-        
-        % change converter control gain
-        para2_ = para2;
+if layout == 1      
+    %2 buses : test the match between symbolic and tf models     
+    %-----------------------------------------------------------
+    %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
+    Bus     = [ 1     1     1.0     0     1.0    0    0.0    0     -1     1;
+                2     3     1.0     0     1.0  -0.2   0.0    0     -1     1];
+    %-----------------------------------------------------------
+    %         |  From |  To   |   R   |   L   |   C   |   G   |
+    %         |  Bus  |  Bus  |       |       |       |       |
+    Line    = [  1       2      0.00     0.3    0.00      inf;
+                 1       1        0       0     1e-1      2.0;
+                 2       2        0       0     1e-1      0.0];     
+elseif layout == 2      
+    %3 buses : test generator interaction        
+    %-----------------------------------------------------------
+    %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
+    Bus     = [ 1     1     1.0     0     0.5    0    0.0    0     -1     1;
+                2     2     1.0     0     0.5    0    0.0    0     -1     1;
+                3     2     1.0     0     1.0    0    0.0    0     -1     1];            
+    %-----------------------------------------------------------
+    %         |  From |  To   |   R   |   L   |   C   |   G   |
+    %         |  Bus  |  Bus  |       |       |       |       |
+    Line    = [  1       2      0.01     0.3      0      inf;
+                 2       3      0.01     0.3      0      inf;
+                 3       1      0.01     0.3      0      inf;
+                 1       1        0       0     2e-2     1.0;
+                 2       2        0       0     2e-2     1.0;
+                 3       3        0       0     2e-2     0.0]; 
+elseif layout == 3      
+    %4 buses : test generator converter interaction  
+    %-----------------------------------------------------------
+    %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
+    Bus     = [ 1     2     1.0     0     0.5    0    0.0    0     -1     1;
+                2     2     1.0     0     0.5    0    0.0    0     -1     1;
+                3     1     1.0     0     0.5    0    0.0    0     -1     1;
+                4     3     1.0     0     0.5  -0.2   0.0    0     -1     1];
+    %-----------------------------------------------------------
+    %         |  From |  To   |   R   |  wL   |  wC   |   G   |
+    %         |  Bus  |  Bus  |       |       |       |       |
+    Line    = [  1       2      0.01     0.3      0      inf;
+                 2       3      0.01     0.3      0      inf;
+                 3       1      0.01     0.3      0      inf;
+                 3       4      0.01     0.3      0      inf;
+                 1       1        0       0     1e-5     0.6;
+                 2       2        0       0     1e-5     0.6;
+                 3       3        0       0     1e-5     0.8;
+                 4       4        0       0     1e-5      0];           
+end
+
+[~,~,Ang0,P0,Q0,V0]=PowerFlow(Bus,Line);
+
+nbus = max(Bus(:,1));
+
+[Ytf1,Yb1] = YbusCalcTF(Line(1:(end-nbus),:),w0);
+[Ytf2,Yb2] = YbusCalcTF(Line((end-nbus+1):end,:),w0);
+Yb1 = minreal(Yb1);
+Zb2 = inv(Yb2);
+Zb2 = minreal(Zb2);
+Zb = feedback(Zb2,Yb1);
+
+%for bandwidth = logspace(log10(5),log10(20),10)
+for bandwidth = linspace(5,20,10)
+%for bandwidth = linspace(1,7,10)
+
+    % reduce generator inertia
+    para1_ = para1;
+    para1_.J = para1_.J/10;
+
+    % change converter control gain
+    para2_ = para2;
+    if sweep == 1        %sweep pll gain        
+        para2_.kp_pll = bandwidth*2*pi;
+        para2_.ki_pll = para2_.kp_pll * (5*2*pi)/4; 
+        para2_.kp_v_dc = para2_.V_dc*para2_.C_dc * (10*2*pi);
+        para2_.ki_v_dc = para2_.kp_v_dc * (10*2*pi)/4;
+    elseif sweep == 2    %sweep pll and dc-link gain
         para2_.kp_pll = bandwidth*2*pi;
         para2_.ki_pll = para2_.kp_pll * (bandwidth*2*pi)/4;                      
         para2_.kp_v_dc = para2_.V_dc*para2_.C_dc * (bandwidth*2*pi);
         para2_.ki_v_dc = para2_.kp_v_dc * (bandwidth*2*pi)/4;
-          
-        if layout == 1
-            type = {0,10};
-            para = {para1_,para2_};
-        elseif layout == 2
-            % three generators
-            type = {0,0,0};
-            para = {para1,para1,para1};
-        elseif layout == 3
-            % four generators
-            %type = {0,0,0,0};
-            %para = {para1,para1,para1_,para1};
-            % three generators and one wind farm
-            type = {0,0,0,10};
-            para = {para1,para1,para1_,para2_};
-        end
-        
-        Gm = cell(1,nbus);
-        Gc = cell(1,nbus);
-        for n = 1:nbus
-            [~,Gm{n},Gc{n},~] = MdlCreate('type', type{n} ,'flow',[-P0(n) -Q0(n) V0(n) Ang0(n) w0],'para',para{n});
-        end
-        
-        if layout == 1
-            Ys1 = Gc{1}(2:3,2:3);
-            Ys2 = Gc{2}(2:3,2:3);
-            Ys1 = Ys1 + eye(2)*Line(2,6);
-            Ys1 = Ys1 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(2,5);
-            Ys2 = Ys2 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(3,5);                       
-            Zs1 = Ys1^(-1);
-            Zs1 = Zs1 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(1,4);
-            Ys1 = Zs1^(-1);
-            Y = Ys1 + Ys2;
-            Z = Y^(-1);
-            pc = vpasolve(1/Z(1,1))/2/pi;
-        end
-            
-        Gm = MdlLink(Gm);
-        Gsys = feedback(Gm,Zb,(nbus+1):(3*nbus),(nbus+1):(3*nbus));
-        
+    end
+
+    % parameters
+    if layout == 1
+        type = {0,10};
+        para = {para1_,para2_};
+    elseif layout == 2
+        % three generators
+        type = {0,0,0};
+        para = {para1,para1,para1};
+    elseif layout == 3
+        % four generators
+        %type = {0,0,0,0};
+        %para = {para1,para1,para1_,para1};
+        % three generators and one wind farm
+        type = {0,0,0,10};
+        para = {para1,para1,para1_,para2_};
+    end
+
+    % model and link
+    Gm = cell(1,nbus);
+    Gc = cell(1,nbus);
+    for n = 1:nbus
+        [~,Gm{n},Gc{n},~] = MdlCreate('type', type{n} ,'flow',[-P0(n) -Q0(n) V0(n) Ang0(n) w0],'para',para{n});
+    end
+    Gm = MdlLink(Gm);
+    Gsys = feedback(Gm,Zb,(nbus+1):(3*nbus),(nbus+1):(3*nbus));
+
+    % manual link for two-node system
+    if (layout == 1) && 0
+        Ys1 = Gc{1}(2:3,2:3);
+        Ys2 = Gc{2}(2:3,2:3);
+        Ys1 = Ys1 + eye(2)*Line(2,6);
+        Ys1 = Ys1 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(2,5);
+        Ys2 = Ys2 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(3,5);                       
+        Zs1 = Ys1^(-1);
+        Zs1 = Zs1 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(1,4);
+        Ys1 = Zs1^(-1);
+        Y = Ys1 + Ys2;
+        Z = Y^(-1);
+        pc = vpasolve(1/Z(1,1))/2/pi;
+    end
+
+    if 1    % pole plots
         psys = pole(Gsys)/2/pi;
         figure(layout);
         scatter(real(psys),imag(psys),'x','LineWidth',1.5);
         hold on; grid on;
-        
-        if layout == 1
+        if (layout == 1) && 0
             scatter(real(pc),imag(pc),'o','LineWidth',1.5);            
         end
-
+        xlabel('Real Part (Hz)');
+        ylabel('Imaginary Part (Hz)');
+        axis([-25,5,-80,80]);
+        print(gcf,'fig0.png','-dpng','-r600');
+        %axis([-0.3,0.10001,-15,15]);
+        %print(gcf,'fig1.png','-dpng','-r600');
     end
-    
-    xlabel('Real Part (Hz)');
-    ylabel('Imaginary Part (Hz)');
-    
-    axis([-25,5,-80,80]);
-    print(gcf,'fig0.png','-dpng','-r600');
-    axis([-0.3,0.10001,-15,15]);
-    print(gcf,'fig1.png','-dpng','-r600');
-end
+            
+    if 1    % torque coefficient bode plots            
+        for n = 1:length(type)
+            Gtw{n} = -tf2sym(tf(Gsys(n,n)));  %#ok<SAGROW>            
+            if type{n} < 10
+                Htw{n} = 1/(para{n}.J*s);                 %#ok<SAGROW>
+            elseif type{n} < 20
+                Htw{n} = 1/(1+para{n}.tau_pll*s)*(para{n}.kp_pll + para{n}.ki_pll/s); %#ok<SAGROW>
+            end           
+            Kwt{n} = Gtw{n}^(-1) - Htw{n}^(-1);           %#ok<SAGROW>
+            Gtt{n} = Kwt{n}* Htw{n};                      %#ok<SAGROW>
+        end
+   
+        disp(['### test' num2str(cpoint) ': bandwidth=' num2str(bandwidth) ' ###']);
+        for nplot = 1:4
+            figure(layout+10*nplot);
+            if ~isstable(Kwt{nplot})
+                disp(['K' num2str(nplot) ' is not stable']);
+            end
+            bodec(Gtt{nplot},1j*w,2*pi,'Color',cmap(mod(cpoint-1,length(cmap))+1,:));                    
+            hold on;
+            grid on;                           
+        end
+        cpoint = cpoint+1;
+    end        
+end    

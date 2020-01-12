@@ -4,7 +4,7 @@
 % ### modified 2019.10.25: anti wind up for phase plot
 % ### modified 2019.10.27: add transfer function matrix plot (not just singular value)
 
-function Xw = bodec(X,wbd,wbase,varargin)
+function Xw = bodec(X,sbd,wbase,varargin)
 
     Option = LoadVar(0,'Option',varargin);
     PhaseOn = LoadVar(1,'PhaseOn',varargin);
@@ -29,11 +29,10 @@ function Xw = bodec(X,wbd,wbase,varargin)
     funcX = matlabFunction(X);
 
     if Option == 0           % bode for transfer function matrix
-        Xw = zeros(M,N,length(wbd));
-        for n = 1:length(wbd)
-            w = 1j*wbd(n);
+        Xw = zeros(M,N,length(sbd));
+        for n = 1:length(sbd)
             try 
-                Xw(:,:,n) = funcX(w);
+                Xw(:,:,n) = funcX(sbd(n));
             catch
                 Xw(:,:,n) = funcX();
             end
@@ -44,11 +43,10 @@ function Xw = bodec(X,wbd,wbase,varargin)
             end
         end
     elseif Option == 1       % singular value for matrix transfer function
-        Xw = zeros(1,1,length(wbd));
-        for n = 1:length(wbd)
-            w = 1j*wbd(n);
+        Xw = zeros(1,1,length(sbd));
+        for n = 1:length(sbd)
             try 
-                Xw(1,1,n) = max(svd(funcX(w))); 
+                Xw(1,1,n) = max(svd(funcX(sbd(n)))); 
             catch
                 Xw(1,1,n) = max(svd(funcX()));
             end
@@ -63,7 +61,7 @@ function Xw = bodec(X,wbd,wbase,varargin)
     end
 
     if PlotOn == 1
-        plotc(Xw,wbd/wbase,'PhaseOn',PhaseOn,varargin);
+        plotc(Xw,imag(sbd)/wbase,'PhaseOn',PhaseOn,varargin);
     end
     
 end
