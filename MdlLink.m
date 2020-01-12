@@ -11,15 +11,17 @@ function Gm = MdlLink(varargin)
         Gm = append(Gm,arg{n});
     end
 
-    seq = 0:(length(arg)-1);
-    seq2 = zeros(1,2*length(arg));
-
+    m = 0;    
+    seq1 = [];
+    seq2 = [];
     for n = 1:length(arg)
-        seq2(2*n-1) = 3*seq(n)+2;
-        seq2(2*n) = 3*seq(n)+3;
+        k = length(arg{n}.B(1,:));
+        seq1 = [seq1, (m + (1:(k-2)))]; %#ok<*AGROW>
+        seq2 = [seq2, (m + ((k-1):k))];
+        m = m + k;
     end
 
-    pvect = [3*seq+1,seq2];
+    pvect = [seq1,seq2];
 
     Gm.B = Gm.B(:,pvect);
     Gm.C = Gm.C(pvect,:);

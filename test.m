@@ -142,12 +142,13 @@ for bandwidth = linspace(5,20,10)
         [~,Gm{n},Gc{n},~] = MdlCreate('type', type{n} ,'flow',[-P0(n) -Q0(n) V0(n) Ang0(n) w0],'para',para{n});
     end
     Gm = MdlLink(Gm);
-    Gsys = feedback(Gm,Zb,(nbus+1):(3*nbus),(nbus+1):(3*nbus));
+    dimu = length(Gm.B(1,:));
+    Gsys = feedback(Gm,Zb,(dimu-2*nbus+1):dimu,(dimu-2*nbus+1):dimu);
 
     % manual link for two-node system
-    if (layout == 1) && 0
-        Ys1 = Gc{1}(2:3,2:3);
-        Ys2 = Gc{2}(2:3,2:3);
+    if (layout == 1) && 1
+        Ys1 = Gc{1}((end-1):end,(end-1):end);
+        Ys2 = Gc{2}((end-1):end,(end-1):end);
         Ys1 = Ys1 + eye(2)*Line(2,6);
         Ys1 = Ys1 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(2,5);
         Ys2 = Ys2 + [(1j + 1/w0*s) 0;0 (-1j + 1/w0*s)]*Line(3,5);                       
@@ -164,7 +165,7 @@ for bandwidth = linspace(5,20,10)
         figure(layout);
         scatter(real(psys),imag(psys),'x','LineWidth',1.5);
         hold on; grid on;
-        if (layout == 1) && 0
+        if (layout == 1) && 1
             scatter(real(pc),imag(pc),'o','LineWidth',1.5);            
         end
         xlabel('Real Part (Hz)');
@@ -177,7 +178,7 @@ for bandwidth = linspace(5,20,10)
             
     if 1    % torque coefficient bode plots            
         for n = 1:length(type)
-            Gtw{n} = -tf2sym(tf(Gsys(n,n)));  %#ok<SAGROW>            
+            Gtw{n} = -tf2sym(tf(Gsys(2*n-1,2*n-1)));      %#ok<SAGROW>            
             if type{n} < 10
                 Htw{n} = 1/(para{n}.J*s);                 %#ok<SAGROW>
             elseif type{n} < 20

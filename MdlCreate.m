@@ -81,15 +81,14 @@ if floor(type/10) == 0  %0-9
 
     % ### state variables
     i_d = sym('i_d'); 
-    i_q = sym('i_q');  
+    i_q = sym('i_q');
+    i_ex = sym('i_ex'); %excitation (field) current
 
     % ### input and output
     v_d = sym('v_d');
     v_q = sym('v_q');
+    v_ex= sym('v_ex');  %excitation (field) voltage
     T_m = sym('T_m');
-    % i_d = sym('i_d');
-    % i_q = sym('i_q');
-    % omega = sym('omega');
 
     % ### parameters
     psi_f = sym('psi_f');
@@ -112,8 +111,8 @@ if floor(type/10) == 0  %0-9
     % ### Jacobian
     x = [i_d i_q omega].';
     f = [di_d di_q domega].';
-    u = [T_m v_d v_q].';
-    y = [omega i_d i_q].';
+    u = [T_m   v_ex v_d v_q].';
+    y = [omega i_ex i_d i_q].';
 
     As = jacobian(f,x);
     Bs = jacobian(f,u);
@@ -208,10 +207,9 @@ elseif floor(type/10) == 1  %10-19
     % ### Jacobian
     x = [i_d i_q i_d_i i_q_i v_dc v_dc_i omega_pll_i omega].';
     f = [di_d di_q di_d_i di_q_i dv_dc dv_dc_i domega_pll_i domega].';
-    
-    %u = [P_dc v_d v_q].';   
-    u = [ang_r v_d v_q].';
-    y = [omega i_d i_q].';
+      
+    u = [ang_r P_dc v_d v_q].';
+    y = [omega v_dc i_d i_q].';
 
     As = jacobian(f,x);
     Bs = jacobian(f,u);
@@ -274,11 +272,11 @@ Sn = ss(An,Bn,Cn,Dn);
 Kv = [-v_q ; v_d];
 Ki = [-i_q ; i_d];
 % integration for omega and unit gain for all
-Se = ss(0,[1 0 0],[1;0;0;0],[zeros(1,3);eye(3)]);
+Se = ss(0,[1 0 0 0],[1;0;0;0;0],[zeros(1,4);eye(4)]);
 Se = series(Sn,Se);
-Se = feedback(Se,ss([],[],[],Kv),[2,3],1);
-Se = series(Se,ss([],[],[],[[0;Ki],eye(3)]));
-Txi = [1 0 0; 0 cos(xi) -sin(xi); 0 sin(xi) cos(xi)];
+Se = feedback(Se,ss([],[],[],Kv),[3,4],1);
+Se = series(Se,ss([],[],[],[[0;0;Ki],eye(4)]));
+Txi = blkdiag(eye(2),[cos(xi) -sin(xi);sin(xi) cos(xi)]);
 Sxi = ss([],[],[],Txi);
 Sxiv= ss([],[],[],Txi^(-1));
 Se = series(Sxiv,Se);
@@ -287,31 +285,10 @@ Gss = Se;
 Gtf = tf(Se);
 
 % ### symbolic models
-I = eye(length(An));
-Tj = [1 0 0; 0 1 1j; 0 1 -1j];
-Txi = [1 0 0; 0 exp(1j*xi) 0; 0 0 exp(-1j*xi)];
-G = Cn *(s*I-An)^(-1)* Bn + Dn;         %real
-G = Tj *G* Tj^(-1);                     %complex
-
-G11 = G(1,1);
-G12 = G(1,2:3);
-G21 = G(2:3,1);
-G22 = G(2:3,2:3);
-
-Vj = [1j*v_dq ; -1j*v_dq']*s^(-1);
-Ij = [1j*i_dq ; -1j*i_dq']*s^(-1);
-
-H1 = 1+G12*Vj;
-H2 = Ij - G22*Vj;
-
-Gs11 = H1^(-1)*G11;
-Gs12 = H1^(-1)*G12;
-Gs21 = H2*Gs11 + G21;
-Gs22 = H2*Gs12 + G22;
-Gs = [Gs11 Gs12;Gs21 Gs22];
-Gc = Txi *Gs* Txi^(-1);   %complex
-Gr = Tj^(-1) *Gc* Tj;     %real
-
+I = eye(length(Gss.A));
+Tj = blkdiag(eye(2),[1 1j;1 -1j]);
+Gr = Gss.C *(s*I-Gss.A)^(-1)* Gss.B + Gss.D;   %real
+Gc = Tj *Gr* Tj^(-1);                          %complex
 %Gc = simplify(Gc);
 %Gr = simplify(Gr);
 
