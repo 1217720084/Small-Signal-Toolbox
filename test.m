@@ -1,10 +1,9 @@
 clear; clc;
 close all;
 cmap = get(groot,'defaultAxesColorOrder');
-cpoint = 1;
 
 %# common variables
-w0 = 2*pi*60;
+w0 = 2*pi*50;
 s = sym('s');
 I = eye(2);
 w = logspace(-2,3,1e5)*2*pi;
@@ -101,9 +100,11 @@ if layout == 1
 elseif layout == 2
     bandwidth_sweep = linspace(1,10,10);
 elseif layout == 3
-    bandwidth_sweep = linspace(5,20,10);
+    %bandwidth_sweep = linspace(5,20,10);
+    bandwidth_sweep = 20;
 end
 
+cpoint = 1; %colormap pointer
 for bandwidth = bandwidth_sweep
 
     % reduce generator inertia
@@ -201,8 +202,27 @@ for bandwidth = bandwidth_sweep
             hold on;
             grid on;                           
         end
-        cpoint = cpoint+1;
-    end        
+    end   
+    
+    if 1    %impedance bode plots
+        Tj = [1 1j;1 -1j];  % real to complex
+        for n = 1:length(type)
+            Ytr{n}(1,1) = tf2sym(tf(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n-1)));  %#ok<SAGROW>
+            Ytr{n}(1,2) = tf2sym(tf(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n-1)));  %#ok<SAGROW>
+            Ytr{n}(2,1) = tf2sym(tf(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n  )));  %#ok<SAGROW>
+            Ytr{n}(1,2) = tf2sym(tf(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n  )));  %#ok<SAGROW>
+            Ytc{n} = Tj*Ytr{n}*Tj^(-1);  %#ok<SAGROW>
+        end
+   
+        for nplot = 1:length(type)
+            figure(layout+100);
+            bodec(Ytc{nplot}(1,1),1j*w,2*pi);                    
+            hold on;
+            grid on;                           
+        end
+    end
+    
+    cpoint = cpoint+1;
 end    
 
 %print(gcf,'fig0.png','-dpng','-r600');

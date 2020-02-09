@@ -27,7 +27,7 @@ end
 try 
     w0;
 catch
-    w0 = 2*pi*60; %default base frequency
+    w0 = 2*pi*50; %default base frequency
 end
 
 try 
@@ -70,6 +70,10 @@ try
     flow;
 catch
     flow = [-1,0,1,0,w0];  %[P Q V xi omega]
+    % note the frequency in flow can be different to 'freq' in parameter
+    % the frequency in flow is steady-state frequency
+    % 'freq' is the nominal frequency only used for default parameters
+    % 'freq' is useless if 'para' and 'flow' are set by users
 end
 
 s = sym('s');
