@@ -34,9 +34,9 @@ para2.ki_i_dq = para2.kp_i_dq *(500*2*pi)/4;
 %# Test: low inertia interact with pll
     
 layout = 3;
-sweep = 1;
+sweep = 2;
 
-if layout == 1      
+if layout == 1
     %2 buses : test the match between symbolic and tf models     
     %-----------------------------------------------------------
     %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
@@ -48,7 +48,7 @@ if layout == 1
     Line    = [  1       2      0.00     0.3    0.00      inf;
                  1       1        0       0     1e-1      2.0;
                  2       2        0       0     1e-1      0.0];     
-elseif layout == 2      
+elseif layout == 2
     %3 buses : test generator interaction        
     %-----------------------------------------------------------
     %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
@@ -96,9 +96,15 @@ Zb2 = inv(Yb2);
 Zb2 = minreal(Zb2);
 Zb = feedback(Zb2,Yb1);
 
-%for bandwidth = logspace(log10(5),log10(20),10)
-for bandwidth = linspace(5,20,10)
-%for bandwidth = linspace(1,7,10)
+if layout == 1
+    bandwidth_sweep = linspace(1,10,10);
+elseif layout == 2
+    bandwidth_sweep = linspace(1,10,10);
+elseif layout == 3
+    bandwidth_sweep = linspace(5,20,10);
+end
+
+for bandwidth = bandwidth_sweep
 
     % reduce generator inertia
     para1_ = para1;
@@ -171,9 +177,6 @@ for bandwidth = linspace(5,20,10)
         xlabel('Real Part (Hz)');
         ylabel('Imaginary Part (Hz)');
         axis([-25,5,-80,80]);
-        print(gcf,'fig0.png','-dpng','-r600');
-        %axis([-0.3,0.10001,-15,15]);
-        %print(gcf,'fig1.png','-dpng','-r600');
     end
             
     if 1    % torque coefficient bode plots            
@@ -189,7 +192,7 @@ for bandwidth = linspace(5,20,10)
         end
    
         disp(['### test' num2str(cpoint) ': bandwidth=' num2str(bandwidth) ' ###']);
-        for nplot = 1:4
+        for nplot = 1:length(type)
             figure(layout+10*nplot);
             if ~isstable(Kwt{nplot})
                 disp(['K' num2str(nplot) ' is not stable']);
@@ -201,3 +204,5 @@ for bandwidth = linspace(5,20,10)
         cpoint = cpoint+1;
     end        
 end    
+
+%print(gcf,'fig0.png','-dpng','-r600');
