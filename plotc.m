@@ -1,6 +1,6 @@
 function plotc(Xw,wbd,varargin)
 
-    LineWidth = LoadVar(1,'LineWidth',varargin);
+    LineWidth = LoadVar(1.5,'LineWidth',varargin);
     LineStyle = LoadVar('-','LineStyle',varargin);
     Color = LoadVar([],'Color',varargin);
     PhaseOn = LoadVar(1,'PhaseOn',varargin);

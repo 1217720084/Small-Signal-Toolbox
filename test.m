@@ -32,7 +32,7 @@ para2.ki_i_dq = para2.kp_i_dq *(500*2*pi)/4;
 %%
 %# Test: low inertia interact with pll
     
-layout = 3;
+layout = 1;
 sweep = 2;
 
 if layout == 1
@@ -81,7 +81,31 @@ elseif layout == 3
                  1       1        0       0     1e-5     0.6;
                  2       2        0       0     1e-5     0.6;
                  3       3        0       0     1e-5     0.8;
-                 4       4        0       0     1e-5      0];           
+                 4       4        0       0     1e-5      0];  
+elseif layout == 4      
+    %5 buses : test generator converter interaction in more meshed grid  
+    %-----------------------------------------------------------
+    %         |Bus | Type | Vsp | theta | PGi | QGi | PLi | QLi | Qmin | Qmax |
+    Bus     = [ 1     2     1.0     0     0.5    0    0.0    0     -1     1;
+                2     2     1.0     0     0.5    0    0.0    0     -1     1;
+                3     1     1.0     0     0.5    0    0.0    0     -1     1;
+                4     3     1.0     0     0.4  -0.2   0.0    0     -1     1;
+                5     3     1.0     0     0.1   0.0   0.0    0     -1     1];
+    %-----------------------------------------------------------
+    %         |  From |  To   |   R   |  wL   |  wC   |   G   |
+    %         |  Bus  |  Bus  |       |       |       |       |
+    Line    = [  1       2      0.01     0.3      0      inf;
+                 2       3      0.01     0.3      0      inf;
+                 3       1      0.01     0.3      0      inf;
+                 3       4      0.01     0.3      0      inf;
+                 3       5      0.01     0.3      0      inf;
+                 1       4      0.10     1.0      0      inf;
+                 2       5      0.10     1.0      0      inf;
+                 1       1        0       0     1e-5     0.6;
+                 2       2        0       0     1e-5     0.6;
+                 3       3        0       0     1e-5     0.8;
+                 4       4        0       0     1e-5     0.0;
+                 5       5        0       0     1e-5     0.0];
 end
 
 [~,~,Ang0,P0,Q0,V0]=PowerFlow(Bus,Line);
@@ -102,6 +126,8 @@ elseif layout == 2
 elseif layout == 3
     %bandwidth_sweep = linspace(5,20,10);
     bandwidth_sweep = 20;
+elseif layout == 4
+    bandwidth_sweep = 20;    
 end
 
 cpoint = 1; %colormap pointer
@@ -110,6 +136,8 @@ for bandwidth = bandwidth_sweep
     % reduce generator inertia
     para1_ = para1;
     para1_.J = para1_.J/10;
+    para1__= para1;
+    para1__.J = para1__.J/2;
 
     % change converter control gain
     para2_ = para2;
@@ -140,6 +168,9 @@ for bandwidth = bandwidth_sweep
         % three generators and one wind farm
         type = {0,0,0,10};
         para = {para1,para1,para1_,para2_};
+    elseif layout == 4
+        type = {0,0,0,10,10};
+        para = {para1,para1__,para1_,para2_,para2};
     end
 
     % model and link
@@ -182,23 +213,27 @@ for bandwidth = bandwidth_sweep
             
     if 1    % torque coefficient bode plots            
         for n = 1:length(type)
-            Gtw{n} = -tf2sym(tf(Gsys(2*n-1,2*n-1)));      %#ok<SAGROW>            
+            %Gtw{n} = -tf2sym(tf(Gsys(2*n-1,2*n-1)));      %#ok<SAGROW>
+            Gtw{n} = -ss2sym(Gsys(2*n-1,2*n-1));          %#ok<SAGROW>
             if type{n} < 10
                 Htw{n} = 1/(para{n}.J*s);                 %#ok<SAGROW>
             elseif type{n} < 20
                 Htw{n} = 1/(1+para{n}.tau_pll*s)*(para{n}.kp_pll + para{n}.ki_pll/s); %#ok<SAGROW>
             end           
-            Kwt{n} = Gtw{n}^(-1) - Htw{n}^(-1);           %#ok<SAGROW>
-            Gtt{n} = Kwt{n}* Htw{n};                      %#ok<SAGROW>
+            Kwt{n} = vpa(Gtw{n}^(-1) - Htw{n}^(-1));      %#ok<SAGROW>
+            Gtt{n} = Kwt{n}* vpa(Htw{n});                 %#ok<SAGROW>
         end
    
         disp(['### test' num2str(cpoint) ': bandwidth=' num2str(bandwidth) ' ###']);
         for nplot = 1:length(type)
             figure(layout+10*nplot);
-            if ~isstable(Kwt{nplot})
-                disp(['K' num2str(nplot) ' is not stable']);
+            if layout <= 3
+                %isstable is very slow for layout >= 4, unsolved !!!
+                if ~isstable(Kwt{nplot})
+                    disp(['K' num2str(nplot) ' is not stable']);
+                end
             end
-            bodec(Gtt{nplot},1j*w,2*pi,'Color',cmap(mod(cpoint-1,length(cmap))+1,:));                    
+            bodec(Gtt{nplot}*1j,1j*w,2*pi,'Color',cmap(mod(cpoint-1,length(cmap))+1,:));                    
             hold on;
             grid on;                           
         end
@@ -207,22 +242,35 @@ for bandwidth = bandwidth_sweep
     if 1    %impedance bode plots
         Tj = [1 1j;1 -1j];  % real to complex
         for n = 1:length(type)
-            Ytr{n}(1,1) = tf2sym(tf(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n-1)));  %#ok<SAGROW>
-            Ytr{n}(1,2) = tf2sym(tf(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n-1)));  %#ok<SAGROW>
-            Ytr{n}(2,1) = tf2sym(tf(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n  )));  %#ok<SAGROW>
-            Ytr{n}(1,2) = tf2sym(tf(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n  )));  %#ok<SAGROW>
+            Ytr{n}(1,1) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n-1));  %#ok<SAGROW>
+            Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n-1));  %#ok<SAGROW>
+            Ytr{n}(2,1) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n  ));  %#ok<SAGROW>
+            Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n  ));  %#ok<SAGROW>
             Ytc{n} = Tj*Ytr{n}*Tj^(-1);  %#ok<SAGROW>
         end
    
         for nplot = 1:length(type)
             figure(layout+100);
-            bodec(Ytc{nplot}(1,1),1j*w,2*pi);                    
+            bodec(Ytc{nplot}(1,1),1j*w,2*pi,'PhaseOn',0);                    
             hold on;
             grid on;                           
         end
     end
     
     cpoint = cpoint+1;
-end    
+end   
 
-%print(gcf,'fig0.png','-dpng','-r600');
+if layout == 4
+    fig = figure(layout+100);
+    axis([1e0,1e3,1e-2,1e3]);
+    fig.Position = [1850 148 720 310];
+    lgd = legend('Generator1','Generator2','Generator3','WindFarm1','WindFarm2');
+    lgd.FontSize = 10;
+    print(gcf,'Y.png','-dpng','-r600');
+elseif layout == 1
+    fig = figure(layout+10);
+    fig.Position = [1985 -28 560 590];
+    fig.Children(1).FontSize = 8;
+    fig.Children(2).FontSize = 8;
+    print(gcf,'K.png','-dpng','-r600');
+end

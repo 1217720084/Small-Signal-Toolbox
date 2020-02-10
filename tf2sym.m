@@ -1,5 +1,7 @@
 % convert a transfer function model to symbolic
 % this is much faster than ss2sym.m
+% 2020-02-09 this function is based on tf which reported overflow when 
+% layout node>=5, and was therefore discarded
 
 function G = tf2sym(S)
 
