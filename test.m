@@ -7,7 +7,7 @@ w0 = 2*pi*50;
 s = sym('s');
 I = eye(2);
 w = logspace(-2,3,1e5)*2*pi;
-%w = [-flip(w),w];
+wd = [-flip(w),w];
 
 %%
 %# default parameters
@@ -32,7 +32,7 @@ para2.ki_i_dq = para2.kp_i_dq *(500*2*pi)/4;
 %%
 %# Test: low inertia interact with pll
     
-layout = 1;
+layout = 4;
 sweep = 2;
 
 if layout == 1
@@ -129,6 +129,8 @@ elseif layout == 3
 elseif layout == 4
     bandwidth_sweep = 20;    
 end
+
+%bandwidth_sweep = 20;%debug
 
 cpoint = 1; %colormap pointer
 for bandwidth = bandwidth_sweep
@@ -243,15 +245,15 @@ for bandwidth = bandwidth_sweep
         Tj = [1 1j;1 -1j];  % real to complex
         for n = 1:length(type)
             Ytr{n}(1,1) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n-1));  %#ok<SAGROW>
-            Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n-1));  %#ok<SAGROW>
-            Ytr{n}(2,1) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n  ));  %#ok<SAGROW>
+            Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n  ));  %#ok<SAGROW>
+            Ytr{n}(2,1) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n-1));  %#ok<SAGROW>
             Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n  ));  %#ok<SAGROW>
             Ytc{n} = Tj*Ytr{n}*Tj^(-1);  %#ok<SAGROW>
         end
    
         for nplot = 1:length(type)
-            figure(layout+100);
-            bodec(Ytc{nplot}(1,1),1j*w,2*pi,'PhaseOn',0);                    
+            figure(layout+200);
+            bodec(Ytc{nplot}(1,1),1j*wd,2*pi,'PhaseOn',0);                    
             hold on;
             grid on;                           
         end
