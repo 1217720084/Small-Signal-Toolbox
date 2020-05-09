@@ -247,12 +247,12 @@ for bandwidth = bandwidth_sweep
             Ytr{n}(1,1) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n-1));  %#ok<SAGROW>
             Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n-1 ,length(type)*2 +2*n  ));  %#ok<SAGROW>
             Ytr{n}(2,1) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n-1));  %#ok<SAGROW>
-            Ytr{n}(1,2) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n  ));  %#ok<SAGROW>
+            Ytr{n}(2,2) = ss2sym(Gsys(length(type)*2 +2*n   ,length(type)*2 +2*n  ));  %#ok<SAGROW>
             Ytc{n} = Tj*Ytr{n}*Tj^(-1);  %#ok<SAGROW>
         end
    
         for nplot = 1:length(type)
-            figure(layout+200);
+            figure(layout+100);
             bodec(Ytc{nplot}(1,1),1j*wd,2*pi,'PhaseOn',0);                    
             hold on;
             grid on;                           
@@ -265,13 +265,13 @@ end
 if layout == 4
     fig = figure(layout+100);
     axis([1e0,1e3,1e-2,1e3]);
-    fig.Position = [1850 148 720 310];
+    fig.Position = [185 148 720 310];
     lgd = legend('Generator1','Generator2','Generator3','WindFarm1','WindFarm2');
     lgd.FontSize = 10;
     print(gcf,'Y.png','-dpng','-r600');
 elseif layout == 1
     fig = figure(layout+10);
-    fig.Position = [1985 -28 560 590];
+    fig.Position = [195 -28 560 590];
     fig.Children(1).FontSize = 8;
     fig.Children(2).FontSize = 8;
     print(gcf,'K.png','-dpng','-r600');
